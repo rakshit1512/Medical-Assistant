@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Geocoding Service</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <script async
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIwzALxUPNbatRBj3Xi1Uhp0fFzwWNBkE&callback=initMap&libraries=places&v=weekly"
+      defer
+    ></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- <script src="jquery-3.5.1.min.js"></script> -->
+    <!-- <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIwzALxUPNbatRBj3Xi1Uhp0fFzwWNBkE&libraries=places&callback=initMap">
+</script> -->
+    <!-- jsFiddle will insert css and js -->
+    <style>
+       /* Always set the map height explicitly to define the size of the div
+          * element that contains the map. */
+    #map {
+      height: 40%;
+    }
+
+    /* Optional: Makes the sample page fill the window. */
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    #floating-panel {
+      position: absolute;
+      top: 10px;
+      left: 25%;
+      z-index: 5;
+      background-color: #fff;
+      padding: 5px;
+      border: 1px solid #999;
+      text-align: center;
+      font-family: "Roboto", "sans-serif";
+      line-height: 30px;
+      padding-left: 10px;
+    } 
+        </style>`
+  </head>
+  <body>
+    <p>Click the button to get your coordinates.</p>
+
+<button onclick="getLocation()">Try It</button>
+
+<p id="demo"></p>
+<p id="dem"></p>
+   
+    <div id="map"></div>
+    <div id="info"></div>
+    <script >
+      var x = document.getElementById("demo");
+       var y=document.getElementById("dem");
+
+
+function getLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(showPosition);
+  } else { 
+    x.innerHTML = "Geolocation is not supported by this browser.";
+  }
+}
+
+function showPosition(position) {
+  x.innerHTML = "Latitude: " + position.coords.latitude + 
+  "<br>Longitude: " + position.coords.longitude;
+
+  initMap(position);
+}
+
+  function initMap(position) {
+  const map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 8,
+    center: { lat: position.coords.latitude, lng: position.coords.longitude },
+
+  });
+
+  const geocoder = new google.maps.Geocoder();
+   const infowindow = new google.maps.InfoWindow();
+  //document.getElementById("submit").addEventListener("click", () => {
+    geocodeLatLng(geocoder, map,infowindow,position);
+    
+  //});
+}
+function geocodeLatLng(geocoder, map, infowindow,position) {
+  // const input = document.getElementById("latlng").value;
+  // const latlngStr = input.split(",", 2);
+  const latlng = {
+    lat: parseFloat(position.coords.latitude),
+    lng: parseFloat(position.coords.longitude),
+  };
+  geocoder.geocode({ location: latlng }, (results, status) => {
+    if (status === "OK")
+    {
+      if (results[0]) {
+        map.setZoom(11);
+        const marker = new google.maps.Marker({
+          position: latlng,
+          map: map,
+        });
+        infowindow.setContent(results[0].formatted_address);
+        y.innerHTML=results[0].formatted_address;
+        infowindow.open(map, marker);
+      } else {
+        window.alert("No results found");
+      }
+    } else {
+      window.alert("Geocoder failed due to: " + status);
+    }
+  });
+  initialize(); 
+}
+      var map;
+var service;
+var infowindow;
+
+function initialize() {
+  var pyrmont = new google.maps.LatLng(30.913540200000003,75.8583597);
+    infowindow = new google.maps.InfoWindow();
+  map = new google.maps.Map(document.getElementById('map'), {
+      center: pyrmont,
+      zoom: 15
+    });
+   console.log("hi");
+  var request = {
+    location: pyrmont,
+    radius: '2000',
+    query: 'general physician'
+  };
+
+  service = new google.maps.places.PlacesService(map);
+  service.textSearch(request, callback);
+}
+
+function callback(results, status) {
+  if (status == google.maps.places.PlacesServiceStatus.OK) {
+    for (var i = 0; i < results.length; i++) {
+      var place = results[i];
+      createMarker(results[i]);
+     $( "#info" ).append( 
+      "<div><strong>" +
+            place.name +
+            "</strong><br>" +
+            "Place ID: " +
+            place.place_id +
+            "<br>" +
+            place.formatted_address +
+            "</div>");
+    }
+     map.setCenter(results[0].geometry.location);
+  }
+}
+
+
+
+function createMarker(place) {
+  const marker = new google.maps.Marker({
+    map,
+    position: place.geometry.location,
+  });
+  console.log(place);
+  google.maps.event.addListener(marker, "click", () => {
+    infowindow.setContent(place.name);
+    infowindow.open(map);
+    check(place);
+  });
+}
+function check(place){
+ const request = {
+    placeId: place.place_id,
+    fields: ["name", "formatted_address", "place_id", "geometry"],
+  };
+  //const infowindow = new google.maps.InfoWindow();
+  const service = new google.maps.places.PlacesService(map);
+  service.getDetails(request, (place, status) => {
+    if (status === google.maps.places.PlacesServiceStatus.OK) {
+      const marker = new google.maps.Marker({
+        map,
+        position: place.geometry.location,
+      });
+      google.maps.event.addListener(marker, "click", function () {
+        infowindow.setContent(
+          "<div><strong>" +
+            place.name +
+            "</strong><br>" +
+            "Place ID: " +
+            place.place_id +
+            "<br>" +
+            place.formatted_address +
+            "</div>"
+        );
+        infowindow.open(map, this);
+      });
+    }
+  });
+}
+
+// function geocodeAddress(geocoder, resultsMap) {
+//   const address = document.getElementById("address").value;
+  
+//   geocoder.geocode({ address: address }, (results, status) => {
+//      y.innerHTML=results[0].geometry.location;
+//     if (status === "OK") {
+//        console.log(results[0]);
+//       resultsMap.setCenter(results[0].geometry.location);
+     
+      
+//       new google.maps.Marker({
+//         map: resultsMap,
+//         position: results[0].geometry.location,
+//       });
+//     } else {
+//       alert("Geocode was not successful for the following reason: " + status);
+//     }
+//   });
+//   // console.log(results[0].geometry.location);
+// }
+    </script>
+  </body>
+</html>
